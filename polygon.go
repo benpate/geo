@@ -22,7 +22,7 @@ func NewPolygon(coordinates ...Position) Polygon {
 }
 
 func (polygon Polygon) IsZero() bool {
-	return polygon.Coordinates.IsEmpty()
+	return polygon.Coordinates.IsZero()
 }
 
 /******************************************
