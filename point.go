@@ -38,8 +38,14 @@ func (point Point) MarshalMap() map[string]any {
 }
 
 // MarshalJSON is a custom json.Marshaller that returns this Point
-// as a GeoJSON object.
+// as a GeoJSON object. This marshaller works with `omitzero` but not
+// `omitempty`
 func (point Point) MarshalJSON() ([]byte, error) {
+
+	if point.IsZero() {
+		return json.Marshal(nil)
+	}
+
 	return json.Marshal(point.MarshalMap())
 }
 

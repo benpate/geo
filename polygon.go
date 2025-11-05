@@ -21,6 +21,10 @@ func NewPolygon(coordinates ...Position) Polygon {
 	}
 }
 
+func (polygon Polygon) IsZero() bool {
+	return polygon.Coordinates.IsEmpty()
+}
+
 /******************************************
  * Marhshalling methods
  ******************************************/
@@ -43,6 +47,10 @@ func (polygon Polygon) MarshalStruct() GeoJSONPolygon {
 // MarshalJSON is a custom json.Marshaller that returns this Polygon
 // as a GeoJSON object.
 func (polygon Polygon) MarshalJSON() ([]byte, error) {
+
+	if polygon.IsZero() {
+		return json.Marshal(nil)
+	}
 
 	return json.Marshal(polygon.MarshalStruct())
 }
