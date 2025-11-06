@@ -123,6 +123,20 @@ func TestPolygon_BSON(t *testing.T) {
 	)
 }
 
+func TestPolygon_BSON_Empty(t *testing.T) {
+
+	mystruct := struct {
+		Title   string  `bson:"title"`
+		Polygon Polygon `bson:"polygon"`
+	}{
+		Title: "test",
+	}
+
+	data, err1 := bson.Marshal(mystruct)
+	require.Nil(t, err1)
+	spew.Dump(string(data))
+}
+
 func TestPolygon_BSON_OmitEmpty(t *testing.T) {
 
 	mystruct := struct {

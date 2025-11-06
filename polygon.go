@@ -2,8 +2,10 @@ package geo
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/benpate/derp"
+	"github.com/benpate/rosetta/convert"
 	"github.com/benpate/rosetta/slice"
 	"github.com/benpate/rosetta/sliceof"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,25 +23,70 @@ func NewPolygon(coordinates ...Position) Polygon {
 	}
 }
 
+func NewPolygonFromString(data string) Polygon {
+
+	// Parse the data as a slice of float64s
+	coords := convert.SliceOfFloat(data)
+
+	// Allocate a result that's half the length of the coordinate pairs
+	result := make([]Position, 0, len(coords)/2)
+
+	// Combiine coordinates into pairs
+	for len(coords) > 1 {
+		position := NewPosition(coords[0], coords[1])
+		result = append(result, position)
+		coords = coords[2:]
+	}
+
+	// UwU
+	return NewPolygon(result...)
+}
+
 func (polygon Polygon) IsZero() bool {
 	return polygon.Coordinates.IsZero()
+}
+
+func (polygon Polygon) NotZero() bool {
+	return !polygon.IsZero()
 }
 
 /******************************************
  * Marhshalling methods
  ******************************************/
 
+func (polygon Polygon) String() string {
+	if polygon.IsZero() {
+		return ""
+	}
+
+	// Combine all points into a single string and return
+	result := slice.Map(polygon.Coordinates, position_string)
+	return strings.Join(result, ",")
+}
+
+// GeoJSON returns a GeoJSON representation of this Polygon
+func (polygon Polygon) GeoJSON() map[string]any {
+	return map[string]any{
+		PropertyType: PropertyTypePolygon,
+		PropertyCoordinates: [][][]float64{
+			polygon.MarshalSlice(),
+		},
+	}
+}
+
+// MarshalSlice returns (a slice of (a slice of floats)), which is the
+// standard way of representing a GeoJSON polygon
+func (polygon Polygon) MarshalSlice() [][]float64 {
+	return slice.Map(polygon.Coordinates, position_slice)
+}
+
 // MarshalMap copies this Polygon into a mapof.Any
 func (polygon Polygon) MarshalStruct() GeoJSONPolygon {
-
-	coordinates := slice.Map(polygon.Coordinates, func(position Position) []float64 {
-		return position.MarshalSlice()
-	})
 
 	return GeoJSONPolygon{
 		Type: PropertyTypePolygon,
 		Coordinates: [][][]float64{
-			coordinates,
+			polygon.MarshalSlice(),
 		},
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/benpate/derp"
+	"github.com/benpate/rosetta/convert"
 	"github.com/benpate/rosetta/sliceof"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -39,12 +40,22 @@ func (position Position) IsZero() bool {
 	return (position.Longitude == 0) && (position.Latitude == 0) && (position.Altitude == 0)
 }
 
+// NotZero returns TRUE if this Position is not Zero
+func (position Position) NotZero() bool {
+	return !position.IsZero()
+}
+
 /******************************************
  * Marshalling methods
  ******************************************/
 
+// String returns a string representation of this coordinate pair
+func (position Position) String() string {
+	return convert.String(position.Longitude) + "," + convert.String(position.Latitude)
+}
+
 // MarshalSlice returns a longitude/latitude coordinate pair
-func (position *Position) MarshalSlice() []float64 {
+func (position Position) MarshalSlice() []float64 {
 
 	if position.Altitude == 0 {
 		return []float64{position.Longitude, position.Latitude}

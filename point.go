@@ -30,10 +30,17 @@ func NewPointWithAltitude(longitude float64, latitude float64, altitude float64)
  * Marhshalling methods
  ******************************************/
 
-func (point Point) MarshalMap() map[string]any {
+func (point Point) GeoJSON() map[string]any {
 	return map[string]any{
 		PropertyType:        PropertyTypePoint,
 		PropertyCoordinates: point.Position.MarshalSlice(),
+	}
+}
+
+func (point Point) MarshalStruct() GeoJSONPoint {
+	return GeoJSONPoint{
+		Type:        PropertyTypePoint,
+		Coordinates: point.MarshalSlice(),
 	}
 }
 
@@ -46,13 +53,13 @@ func (point Point) MarshalJSON() ([]byte, error) {
 		return json.Marshal(nil)
 	}
 
-	return json.Marshal(point.MarshalMap())
+	return json.Marshal(point.MarshalStruct())
 }
 
 // MarshalBSON is a custom BSON marshaller that serializes this
 // Position into a GeoJSON coordinate pair
 func (point Point) MarshalBSON() ([]byte, error) {
-	return bson.Marshal(point.MarshalMap())
+	return bson.Marshal(point.MarshalStruct())
 }
 
 /******************************************
