@@ -33,7 +33,7 @@ func NewPointWithAltitude(longitude float64, latitude float64, altitude float64)
 func (point Point) GeoJSON() map[string]any {
 	return map[string]any{
 		PropertyType:        PropertyTypePoint,
-		PropertyCoordinates: point.Position.MarshalSlice(),
+		PropertyCoordinates: point.MarshalSlice(),
 	}
 }
 
@@ -80,7 +80,7 @@ func (point *Point) UnmarshalMap(data mapof.Any) error {
 	// Parse the coordinates
 	coordinates := data.GetSliceOfFloat(PropertyCoordinates)
 
-	if err := point.Position.UnmarshalSlice(coordinates); err != nil {
+	if err := point.UnmarshalSlice(coordinates); err != nil {
 		return derp.Wrap(err, location, "Unable to unmarshal coordinates", coordinates)
 	}
 
