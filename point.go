@@ -2,6 +2,7 @@ package geo
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/benpate/derp"
 	"github.com/benpate/rosetta/mapof"
@@ -24,6 +25,14 @@ func NewPointWithAltitude(longitude float64, latitude float64, altitude float64)
 	return Point{
 		Position: NewPositionWithAltitude(longitude, latitude, altitude),
 	}
+}
+
+func (point Point) LonLat() string {
+	return strconv.FormatFloat(point.Longitude, 'f', 10, 64) + "," + strconv.FormatFloat(point.Latitude, 'f', 10, 64)
+}
+
+func (point Point) LatLon() string {
+	return strconv.FormatFloat(point.Latitude, 'f', 10, 64) + "," + strconv.FormatFloat(point.Longitude, 'f', 10, 64)
 }
 
 /******************************************
