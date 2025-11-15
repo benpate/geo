@@ -1,6 +1,10 @@
 package geo
 
-import "github.com/benpate/rosetta/schema"
+import (
+	"strconv"
+
+	"github.com/benpate/rosetta/schema"
+)
 
 func AddressSchema() schema.Element {
 	return schema.Object{
@@ -17,6 +21,11 @@ func AddressSchema() schema.Element {
 			AddressPropertyLatitude:   schema.Number{BitSize: 64},
 		},
 	}
+}
+
+func (address Address) GetString(name string) string {
+	result, _ := address.GetStringOK(name)
+	return result
 }
 
 func (address Address) GetStringOK(name string) (string, bool) {
@@ -46,6 +55,12 @@ func (address Address) GetStringOK(name string) (string, bool) {
 
 	case "country":
 		return address.Country, true
+
+	case "longitude":
+		return strconv.FormatFloat(address.Longitude, 'f', 10, 64), false
+
+	case "latitude":
+		return strconv.FormatFloat(address.Latitude, 'f', 10, 64), false
 	}
 
 	return "", false
