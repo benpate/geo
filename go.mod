@@ -3,7 +3,7 @@ module github.com/benpate/geo
 go 1.25.1
 
 require (
-	github.com/benpate/derp v0.34.0
+	github.com/benpate/derp v0.34.1
 	github.com/benpate/rosetta v0.25.23
 	github.com/davecgh/go-spew v1.1.1
 	github.com/stretchr/testify v1.11.1
