@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -134,7 +133,7 @@ func TestPolygon_BSON_Empty(t *testing.T) {
 
 	data, err1 := bson.Marshal(mystruct)
 	require.Nil(t, err1)
-	spew.Dump(string(data))
+	t.Log(data)
 }
 
 func TestPolygon_BSON_OmitEmpty(t *testing.T) {
@@ -148,5 +147,5 @@ func TestPolygon_BSON_OmitEmpty(t *testing.T) {
 
 	data, err1 := bson.Marshal(mystruct)
 	require.Nil(t, err1)
-	spew.Dump(string(data))
+	t.Log(data)
 }
