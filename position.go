@@ -2,6 +2,7 @@ package geo
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/benpate/derp"
 	"github.com/benpate/rosetta/convert"
@@ -9,6 +10,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
+
+// formatCoordinatePair formats two coordinates as "first,second", each to ten
+// decimal places. It backs the LonLat/LatLon methods on Point and Address.
+func formatCoordinatePair(first float64, second float64) string {
+	return strconv.FormatFloat(first, 'f', 10, 64) + "," + strconv.FormatFloat(second, 'f', 10, 64)
+}
 
 // Position represents a Longitude/Latitude pair
 // https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.1

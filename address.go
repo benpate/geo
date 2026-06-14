@@ -1,8 +1,6 @@
 package geo
 
 import (
-	"strconv"
-
 	"github.com/benpate/rosetta/mapof"
 )
 
@@ -108,12 +106,12 @@ func (address Address) HasAddress() bool {
 
 // LonLat returns the coordinates as a "longitude,latitude" string.
 func (address Address) LonLat() string {
-	return strconv.FormatFloat(address.Longitude, 'f', 10, 64) + "," + strconv.FormatFloat(address.Latitude, 'f', 10, 64)
+	return formatCoordinatePair(address.Longitude, address.Latitude)
 }
 
 // LatLon returns the coordinates as a "latitude,longitude" string.
 func (address Address) LatLon() string {
-	return strconv.FormatFloat(address.Latitude, 'f', 10, 64) + "," + strconv.FormatFloat(address.Longitude, 'f', 10, 64)
+	return formatCoordinatePair(address.Latitude, address.Longitude)
 }
 
 // SetPoint copies the longitude and latitude from the given Point into this Address.
