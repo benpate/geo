@@ -10,7 +10,135 @@ import (
 
 func TestPolygon_Zeroer(t *testing.T) {
 	require.True(t, NewPolygon().IsZero())
+	require.False(t, NewPolygon().NotZero())
+
 	require.False(t, NewPolygon(NewPosition(0, 0)).IsZero())
+	require.True(t, NewPolygon(NewPosition(0, 0)).NotZero())
+}
+
+func TestNewPolygonFromString(t *testing.T) {
+
+	// check confirms a coordinate string parses into the expected positions
+	check := func(data string, expected ...Position) {
+		require.Equal(t, NewPolygon(expected...), NewPolygonFromString(data))
+	}
+
+	check("1,2,3,4",
+		NewPosition(1, 2),
+		NewPosition(3, 4),
+	)
+
+	check("-118.5,34.25,-119,35",
+		NewPosition(-118.5, 34.25),
+		NewPosition(-119, 35),
+	)
+
+	// An odd trailing coordinate is dropped (no partner to pair with)
+	check("1,2,3",
+		NewPosition(1, 2),
+	)
+}
+
+func TestNewPolygonFromString_Empty(t *testing.T) {
+	require.True(t, NewPolygonFromString("").IsZero())
+}
+
+func TestPolygon_String(t *testing.T) {
+
+	require.Equal(t, "", NewPolygon().String())
+
+	polygon := NewPolygon(
+		NewPosition(1, 2),
+		NewPosition(3, 4),
+	)
+	require.Equal(t, "1,2,3,4", polygon.String())
+}
+
+func TestPolygon_GeoJSON(t *testing.T) {
+
+	polygon := NewPolygon(
+		NewPosition(1, 2),
+		NewPosition(3, 4),
+	)
+
+	result := polygon.GeoJSON()
+	require.Equal(t, PropertyTypePolygon, result[PropertyType])
+	require.Equal(t, [][][]float64{{{1, 2}, {3, 4}}}, result[PropertyCoordinates])
+}
+
+func TestPolygon_MarshalSlice(t *testing.T) {
+
+	polygon := NewPolygon(
+		NewPosition(1, 2),
+		NewPosition(3, 4),
+	)
+
+	require.Equal(t, [][]float64{{1, 2}, {3, 4}}, polygon.MarshalSlice())
+}
+
+func TestPolygon_MarshalStruct(t *testing.T) {
+
+	polygon := NewPolygon(
+		NewPosition(1, 2),
+		NewPosition(3, 4),
+	)
+
+	result := polygon.MarshalStruct()
+	require.Equal(t, PropertyTypePolygon, result.Type)
+	require.Equal(t, [][][]float64{{{1, 2}, {3, 4}}}, result.Coordinates)
+}
+
+func TestPolygon_UnmarshalStruct_Errors(t *testing.T) {
+
+	// Coordinates must contain exactly one ring
+	polygon := Polygon{}
+	require.NotNil(t, polygon.UnmarshalStruct(GeoJSONPolygon{
+		Type:        PropertyTypePolygon,
+		Coordinates: [][][]float64{},
+	}))
+
+	require.NotNil(t, polygon.UnmarshalStruct(GeoJSONPolygon{
+		Type: PropertyTypePolygon,
+		Coordinates: [][][]float64{
+			{{1, 2}},
+			{{3, 4}},
+		},
+	}))
+
+	// A coordinate inside the ring has an invalid length
+	require.NotNil(t, polygon.UnmarshalStruct(GeoJSONPolygon{
+		Type: PropertyTypePolygon,
+		Coordinates: [][][]float64{
+			{{1}},
+		},
+	}))
+}
+
+func TestPolygon_UnmarshalJSON_Errors(t *testing.T) {
+
+	polygon := Polygon{}
+
+	// Malformed JSON
+	require.NotNil(t, polygon.UnmarshalJSON([]byte("not json")))
+
+	// Valid JSON, but invalid Polygon structure (zero rings)
+	require.NotNil(t, polygon.UnmarshalJSON([]byte(`{"type":"Polygon","coordinates":[]}`)))
+}
+
+func TestPolygon_UnmarshalBSON_Error(t *testing.T) {
+
+	polygon := Polygon{}
+	require.NotNil(t, polygon.UnmarshalBSON([]byte("not bson")))
+}
+
+func TestPolygon_UnmarshalBSON_InvalidStructure(t *testing.T) {
+
+	// Well-formed BSON that decodes, but has the wrong number of rings
+	data, err := bson.Marshal(GeoJSONPolygon{Type: PropertyTypePolygon, Coordinates: [][][]float64{}})
+	require.Nil(t, err)
+
+	polygon := Polygon{}
+	require.NotNil(t, polygon.UnmarshalBSON(data))
 }
 
 func TestPolygon_JSON(t *testing.T) {

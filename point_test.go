@@ -13,6 +13,94 @@ func TestPoint_Zeroer(t *testing.T) {
 	require.False(t, NewPoint(1, 0).IsZero())
 }
 
+func TestNewPoint(t *testing.T) {
+	require.Equal(t, Point{Position: NewPosition(1, 2)}, NewPoint(1, 2))
+	require.Equal(t, Point{Position: NewPositionWithAltitude(1, 2, 3)}, NewPointWithAltitude(1, 2, 3))
+}
+
+func TestPoint_LonLat(t *testing.T) {
+	point := NewPoint(-118.5, 34.25)
+	require.Equal(t, "-118.5000000000,34.2500000000", point.LonLat())
+}
+
+func TestPoint_LatLon(t *testing.T) {
+	point := NewPoint(-118.5, 34.25)
+	require.Equal(t, "34.2500000000,-118.5000000000", point.LatLon())
+}
+
+func TestPoint_GeoJSON(t *testing.T) {
+	result := NewPoint(1, 2).GeoJSON()
+	require.Equal(t, PropertyTypePoint, result[PropertyType])
+	require.Equal(t, []float64{1, 2}, result[PropertyCoordinates])
+}
+
+func TestPoint_MarshalStruct(t *testing.T) {
+	result := NewPointWithAltitude(1, 2, 3).MarshalStruct()
+	require.Equal(t, PropertyTypePoint, result.Type)
+	require.Equal(t, []float64{1, 2, 3}, result.Coordinates)
+}
+
+func TestPoint_UnmarshalMap(t *testing.T) {
+
+	point := Point{}
+	err := point.UnmarshalMap(map[string]any{
+		PropertyType:        PropertyTypePoint,
+		PropertyCoordinates: []float64{1, 2},
+	})
+
+	require.Nil(t, err)
+	require.Equal(t, NewPoint(1, 2), point)
+}
+
+func TestPoint_UnmarshalMap_WrongType(t *testing.T) {
+
+	point := Point{}
+	err := point.UnmarshalMap(map[string]any{
+		PropertyType:        PropertyTypePolygon,
+		PropertyCoordinates: []float64{1, 2},
+	})
+
+	require.NotNil(t, err)
+}
+
+func TestPoint_UnmarshalMap_BadCoordinates(t *testing.T) {
+
+	point := Point{}
+	err := point.UnmarshalMap(map[string]any{
+		PropertyType:        PropertyTypePoint,
+		PropertyCoordinates: []float64{1}, // too few coordinates
+	})
+
+	require.NotNil(t, err)
+}
+
+func TestPoint_UnmarshalJSON_Errors(t *testing.T) {
+
+	point := Point{}
+
+	// Malformed JSON
+	require.NotNil(t, point.UnmarshalJSON([]byte("not json")))
+
+	// Valid JSON, wrong GeoJSON type
+	require.NotNil(t, point.UnmarshalJSON([]byte(`{"type":"Polygon","coordinates":[1,2]}`)))
+}
+
+func TestPoint_UnmarshalBSON_Error(t *testing.T) {
+
+	point := Point{}
+	require.NotNil(t, point.UnmarshalBSON([]byte("not bson")))
+}
+
+func TestPoint_UnmarshalBSON_WrongType(t *testing.T) {
+
+	// Well-formed BSON that decodes into a map, but is not a valid Point
+	data, err := bson.Marshal(GeoJSONPoint{Type: PropertyTypePolygon, Coordinates: []float64{1, 2}})
+	require.Nil(t, err)
+
+	point := Point{}
+	require.NotNil(t, point.UnmarshalBSON(data))
+}
+
 func TestPoint_JSON(t *testing.T) {
 
 	p1 := NewPoint(1, 2)
