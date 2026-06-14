@@ -67,7 +67,7 @@ func (position Position) MarshalSlice() []float64 {
 	return []float64{position.Longitude, position.Latitude, position.Altitude}
 }
 
-// MarshalJSON is a custom JBSON marshaller that serializes this
+// MarshalJSON is a custom JSON marshaller that serializes this
 // Position into a GeoJSON coordinate pair
 func (position Position) MarshalJSON() ([]byte, error) {
 	return json.Marshal(position.MarshalSlice())
