@@ -67,7 +67,7 @@ func (polygon Polygon) String() string {
 	}
 
 	// Combine all points into a single string and return
-	result := slice.Map(polygon.Coordinates, position_string)
+	result := slice.Map(polygon.Coordinates, Position.String)
 	return strings.Join(result, ",")
 }
 
@@ -84,7 +84,7 @@ func (polygon Polygon) GeoJSON() map[string]any {
 // MarshalSlice returns (a slice of (a slice of floats)), which is the
 // standard way of representing a GeoJSON polygon
 func (polygon Polygon) MarshalSlice() [][]float64 {
-	return slice.Map(polygon.Coordinates, position_slice)
+	return slice.Map(polygon.Coordinates, Position.MarshalSlice)
 }
 
 // MarshalStruct returns this Polygon as a strongly-typed GeoJSONPolygon.
