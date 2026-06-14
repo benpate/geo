@@ -62,9 +62,9 @@ func TestAddress_GetStringOK(t *testing.T) {
 	check("postalCode", "90210", true)
 	check("country", "USA", true)
 
-	// NOTE: longitude/latitude return a formatted value but report ok=false
-	check("longitude", "-118.0000000000", false)
-	check("latitude", "34.0000000000", false)
+	// longitude/latitude are returned as their formatted numeric value
+	check("longitude", "-118.0000000000", true)
+	check("latitude", "34.0000000000", true)
 
 	// Unknown property names return empty + false
 	check("unknown", "", false)
@@ -75,8 +75,6 @@ func TestAddress_GetString(t *testing.T) {
 
 	address := Address{Name: "Home", Longitude: -118}
 
-	// GetString ignores the "ok" flag, so it returns the formatted float even
-	// though GetStringOK reports ok=false for longitude/latitude
 	require.Equal(t, "Home", address.GetString("name"))
 	require.Equal(t, "-118.0000000000", address.GetString("longitude"))
 	require.Equal(t, "", address.GetString("unknown"))

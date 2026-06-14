@@ -56,11 +56,12 @@ func (address Address) GetStringOK(name string) (string, bool) {
 	case "country":
 		return address.Country, true
 
+	// longitude/latitude can be read as strings, too...
 	case "longitude":
-		return strconv.FormatFloat(address.Longitude, 'f', 10, 64), false
+		return strconv.FormatFloat(address.Longitude, 'f', 10, 64), true
 
 	case "latitude":
-		return strconv.FormatFloat(address.Latitude, 'f', 10, 64), false
+		return strconv.FormatFloat(address.Latitude, 'f', 10, 64), true
 	}
 
 	return "", false
