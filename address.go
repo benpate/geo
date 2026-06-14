@@ -125,7 +125,7 @@ func (address *Address) SetPoint(point Point) {
  ******************************************/
 
 // MarshalMap returns this Address as a mapof.Any keyed by its property names.
-func (address *Address) MarshalMap() mapof.Any {
+func (address Address) MarshalMap() mapof.Any {
 
 	return mapof.Any{
 		AddressPropertyName:       address.Name,
