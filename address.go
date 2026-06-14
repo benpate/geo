@@ -156,7 +156,7 @@ func (address *Address) UnmarshalMap(value mapof.Any) error {
 	address.Timezone = value.GetString(AddressPropertyTimezone)
 	address.PlusCode = value.GetString(AddressPropertyPlusCode)
 	address.Longitude = value.GetFloat(AddressPropertyLongitude)
-	address.Latitude = value.GetFloat(AddressPropertyLongitude)
+	address.Latitude = value.GetFloat(AddressPropertyLatitude)
 
 	return nil
 }
