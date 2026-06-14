@@ -63,20 +63,41 @@ func TestPosition_UnmarshalSlice_Errors(t *testing.T) {
 	checkError(sliceof.Float{1, 2, 3, 4})
 }
 
-func TestPosition_MarshalBSON(t *testing.T) {
+func TestPosition_BSON(t *testing.T) {
 
-	// Position.MarshalBSON serializes to a bare array, which is NOT a valid
-	// standalone BSON document. (Point/Polygon embed it via MarshalStruct
-	// instead.) This documents that marshalling a top-level Position fails.
-	_, err := bson.Marshal(NewPositionWithAltitude(1, 2, 3))
-	require.NotNil(t, err)
+	// A Position is a BSON array value, so it round-trips as a field within a
+	// document (via the bson.ValueMarshaler / ValueUnmarshaler interfaces).
+	type wrapper struct {
+		Position Position `bson:"position"`
+	}
+
+	check := func(position Position) {
+		data, err := bson.Marshal(wrapper{Position: position})
+		require.Nil(t, err)
+
+		result := wrapper{}
+		require.Nil(t, bson.Unmarshal(data, &result))
+		require.Equal(t, position, result.Position)
+	}
+
+	check(NewPosition(1, 2))
+	check(NewPositionWithAltitude(1, 2, 3))
 }
 
-// NOTE: Position.UnmarshalBSON is intentionally left uncovered. Position
-// marshals to a bare BSON array (see TestPosition_MarshalBSON), which is not a
-// valid standalone BSON document, so there is no supported path that produces
-// bytes this method can consume. Point/Polygon decode through their own
-// struct-based UnmarshalBSON methods instead.
+func TestPosition_UnmarshalBSONValue_Error(t *testing.T) {
+
+	position := Position{}
+
+	// A BSON value of the wrong type (a string, not an array) should error
+	stringType, stringData, err := bson.MarshalValue("not an array")
+	require.Nil(t, err)
+	require.NotNil(t, position.UnmarshalBSONValue(stringType, stringData))
+
+	// A valid BSON array, but with an invalid coordinate length, should error
+	shortType, shortData, err := bson.MarshalValue([]float64{1})
+	require.Nil(t, err)
+	require.NotNil(t, position.UnmarshalBSONValue(shortType, shortData))
+}
 
 func TestPosition_UnmarshalJSON_Error(t *testing.T) {
 

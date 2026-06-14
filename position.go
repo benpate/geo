@@ -7,6 +7,7 @@ import (
 	"github.com/benpate/rosetta/convert"
 	"github.com/benpate/rosetta/sliceof"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
 
 // Position represents a Longitude/Latitude pair
@@ -70,10 +71,11 @@ func (position Position) MarshalJSON() ([]byte, error) {
 	return json.Marshal(position.MarshalSlice())
 }
 
-// MarshalBSON is a custom BSON marshaller that serializes this
-// Position into a GeoJSON coordinate pair
-func (position Position) MarshalBSON() ([]byte, error) {
-	return bson.Marshal(position.MarshalSlice())
+// MarshalBSONValue is a custom BSON marshaller that serializes this Position
+// into a GeoJSON coordinate pair. It implements bson.ValueMarshaler (rather than
+// bson.Marshaler) because a coordinate pair is a BSON array, not a document.
+func (position Position) MarshalBSONValue() (bsontype.Type, []byte, error) {
+	return bson.MarshalValue(position.MarshalSlice())
 }
 
 /******************************************
@@ -123,16 +125,17 @@ func (position *Position) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// UnmarshalBSON is a custom BSON unmarshaller that deserializes
-// a BSON / GeoJSON coordinate pair into this Position structure.
-func (position *Position) UnmarshalBSON(data []byte) error {
+// UnmarshalBSONValue is a custom BSON unmarshaller that deserializes a BSON /
+// GeoJSON coordinate pair into this Position structure. It implements
+// bson.ValueUnmarshaler to match MarshalBSONValue's array encoding.
+func (position *Position) UnmarshalBSONValue(dataType bsontype.Type, data []byte) error {
 
-	const location = "geo.LatLng.UnmarshalBSON"
+	const location = "geo.Position.UnmarshalBSONValue"
 
 	// Unmarshal into a temporary array
 	intermediate := make(sliceof.Float, 0, 3)
 
-	if err := bson.Unmarshal(data, &intermediate); err != nil {
+	if err := bson.UnmarshalValue(dataType, data, &intermediate); err != nil {
 		return derp.Wrap(err, location, "Unable to unmarshal BSON")
 	}
 
