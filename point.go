@@ -15,22 +15,26 @@ type Point struct {
 	Position
 }
 
+// NewPoint returns a Point at the given longitude and latitude (no altitude).
 func NewPoint(longitude float64, latitude float64) Point {
 	return Point{
 		Position: NewPosition(longitude, latitude),
 	}
 }
 
+// NewPointWithAltitude returns a Point at the given longitude, latitude, and altitude.
 func NewPointWithAltitude(longitude float64, latitude float64, altitude float64) Point {
 	return Point{
 		Position: NewPositionWithAltitude(longitude, latitude, altitude),
 	}
 }
 
+// LonLat returns the coordinates as a "longitude,latitude" string.
 func (point Point) LonLat() string {
 	return strconv.FormatFloat(point.Longitude, 'f', 10, 64) + "," + strconv.FormatFloat(point.Latitude, 'f', 10, 64)
 }
 
+// LatLon returns the coordinates as a "latitude,longitude" string.
 func (point Point) LatLon() string {
 	return strconv.FormatFloat(point.Latitude, 'f', 10, 64) + "," + strconv.FormatFloat(point.Longitude, 'f', 10, 64)
 }
@@ -39,6 +43,7 @@ func (point Point) LatLon() string {
  * Marhshalling methods
  ******************************************/
 
+// GeoJSON returns this Point as a GeoJSON object (a "type"/"coordinates" map).
 func (point Point) GeoJSON() map[string]any {
 	return map[string]any{
 		PropertyType:        PropertyTypePoint,
@@ -46,6 +51,7 @@ func (point Point) GeoJSON() map[string]any {
 	}
 }
 
+// MarshalStruct returns this Point as a strongly-typed GeoJSONPoint.
 func (point Point) MarshalStruct() GeoJSONPoint {
 	return GeoJSONPoint{
 		Type:        PropertyTypePoint,
@@ -66,7 +72,7 @@ func (point Point) MarshalJSON() ([]byte, error) {
 }
 
 // MarshalBSON is a custom BSON marshaller that serializes this
-// Position into a GeoJSON coordinate pair
+// Point into a GeoJSON object.
 func (point Point) MarshalBSON() ([]byte, error) {
 	return bson.Marshal(point.MarshalStruct())
 }
@@ -120,10 +126,10 @@ func (point *Point) UnmarshalJSON(data []byte) error {
 }
 
 // UnmarshalBSON is a custom BSON unmarshaller that deserializes
-// a BSON / GeoJSON coordinate pair into this Position structure.
+// a GeoJSON object into this Point structure.
 func (point *Point) UnmarshalBSON(data []byte) error {
 
-	const location = "geo.LatLng.UnmarshalBSON"
+	const location = "geo.Point.UnmarshalBSON"
 
 	// Unmarshall BSON into an intermediate object
 	intermediate := mapof.NewAny()

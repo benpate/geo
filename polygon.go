@@ -17,12 +17,16 @@ type Polygon struct {
 	Coordinates sliceof.Object[Position]
 }
 
+// NewPolygon returns a Polygon made up of the given positions.
 func NewPolygon(coordinates ...Position) Polygon {
 	return Polygon{
 		Coordinates: coordinates,
 	}
 }
 
+// NewPolygonFromString parses a comma-delimited list of coordinates
+// ("lon,lat,lon,lat,...") into a Polygon. Unparseable values and an
+// unpaired trailing coordinate are silently dropped.
 func NewPolygonFromString(data string) Polygon {
 
 	// Parse the data as a slice of float64s
@@ -42,10 +46,12 @@ func NewPolygonFromString(data string) Polygon {
 	return NewPolygon(result...)
 }
 
+// IsZero returns TRUE if this Polygon has no coordinates.
 func (polygon Polygon) IsZero() bool {
 	return polygon.Coordinates.IsZero()
 }
 
+// NotZero returns TRUE if this Polygon has at least one coordinate.
 func (polygon Polygon) NotZero() bool {
 	return !polygon.IsZero()
 }
@@ -54,6 +60,7 @@ func (polygon Polygon) NotZero() bool {
  * Marhshalling methods
  ******************************************/
 
+// String returns the coordinates as a comma-delimited "lon,lat,lon,lat,..." string.
 func (polygon Polygon) String() string {
 	if polygon.IsZero() {
 		return ""
@@ -80,7 +87,7 @@ func (polygon Polygon) MarshalSlice() [][]float64 {
 	return slice.Map(polygon.Coordinates, position_slice)
 }
 
-// MarshalMap copies this Polygon into a mapof.Any
+// MarshalStruct returns this Polygon as a strongly-typed GeoJSONPolygon.
 func (polygon Polygon) MarshalStruct() GeoJSONPolygon {
 
 	return GeoJSONPolygon{
@@ -103,7 +110,7 @@ func (polygon Polygon) MarshalJSON() ([]byte, error) {
 }
 
 // MarshalBSON is a custom BSON marshaller that serializes this
-// Position into a GeoJSON coordinate pair
+// Polygon into a GeoJSON object.
 func (polygon Polygon) MarshalBSON() ([]byte, error) {
 	return bson.Marshal(polygon.MarshalStruct())
 }
@@ -112,6 +119,8 @@ func (polygon Polygon) MarshalBSON() ([]byte, error) {
  * Unmarhshalling methods
  ******************************************/
 
+// UnmarshalStruct populates this Polygon from a strongly-typed GeoJSONPolygon,
+// which must contain exactly one ring of coordinates.
 func (polygon *Polygon) UnmarshalStruct(data GeoJSONPolygon) error {
 
 	const location = "geo.Polygon.UnmarshalStruct"
@@ -157,10 +166,10 @@ func (polygon *Polygon) UnmarshalJSON(data []byte) error {
 }
 
 // UnmarshalBSON is a custom BSON unmarshaller that deserializes
-// a BSON / GeoJSON coordinate pair into this Position structure.
+// a GeoJSON object into this Polygon structure.
 func (polygon *Polygon) UnmarshalBSON(data []byte) error {
 
-	const location = "geo.LatLng.UnmarshalBSON"
+	const location = "geo.Polygon.UnmarshalBSON"
 
 	// Unmarshall BSON into an intermediate object
 	intermediate := GeoJSONPolygon{}

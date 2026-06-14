@@ -18,6 +18,7 @@ type Position struct {
 	Altitude  float64
 }
 
+// NewPosition returns a Position at the given longitude and latitude (no altitude).
 func NewPosition(longitude float64, latitude float64) Position {
 
 	return Position{
@@ -27,6 +28,7 @@ func NewPosition(longitude float64, latitude float64) Position {
 	}
 }
 
+// NewPositionWithAltitude returns a Position at the given longitude, latitude, and altitude.
 func NewPositionWithAltitude(longitude float64, latitude float64, altitude float64) Position {
 
 	return Position{
@@ -82,9 +84,11 @@ func (position Position) MarshalBSONValue() (bsontype.Type, []byte, error) {
  * Unmarshalling methods
  ******************************************/
 
+// UnmarshalSlice populates this Position from a coordinate slice of length 2
+// (longitude, latitude) or length 3 (longitude, latitude, altitude).
 func (position *Position) UnmarshalSlice(coordinates sliceof.Float) error {
 
-	const location = "geo.Position.unmarshalSlice"
+	const location = "geo.Position.UnmarshalSlice"
 
 	switch coordinates.Length() {
 
@@ -101,14 +105,14 @@ func (position *Position) UnmarshalSlice(coordinates sliceof.Float) error {
 		return nil
 	}
 
-	return derp.Internal(location, "Invalid coordinate length.  Coordinates must be length 2", coordinates)
+	return derp.Internal(location, "Invalid coordinate length. Coordinates must be length 2 or 3", coordinates)
 }
 
-// UnmarshalBSON is a custom BSON unmarshaller that deserializes
-// a BSON / GeoJSON coordinate pair into this Position structure.
+// UnmarshalJSON is a custom JSON unmarshaller that deserializes
+// a GeoJSON coordinate pair into this Position structure.
 func (position *Position) UnmarshalJSON(data []byte) error {
 
-	const location = "geo.LatLng.UnmarshalJSON"
+	const location = "geo.Position.UnmarshalJSON"
 
 	// Unmarshal into a temporary array
 	intermediate := make(sliceof.Float, 0, 3)

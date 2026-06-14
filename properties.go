@@ -1,9 +1,19 @@
 package geo
 
-const PropertyType = "type"
+// GeoJSON property names used in marshalled output.
+const (
+	// PropertyType is the GeoJSON "type" property.
+	PropertyType = "type"
 
-const PropertyCoordinates = "coordinates"
+	// PropertyCoordinates is the GeoJSON "coordinates" property.
+	PropertyCoordinates = "coordinates"
+)
 
-const PropertyTypePoint = "Point"
+// GeoJSON "type" values supported by this package.
+const (
+	// PropertyTypePoint is the GeoJSON type value for a Point.
+	PropertyTypePoint = "Point"
 
-const PropertyTypePolygon = "Polygon"
+	// PropertyTypePolygon is the GeoJSON type value for a Polygon.
+	PropertyTypePolygon = "Polygon"
+)

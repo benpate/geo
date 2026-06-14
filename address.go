@@ -24,6 +24,7 @@ type Address struct {
 	Longitude  float64 `json:"longitude"   bson:"longitude,omitempty"`  // Longitude of the address
 }
 
+// NewAddress returns an empty Address.
 func NewAddress() Address {
 	return Address{}
 }
@@ -42,6 +43,7 @@ func (address *Address) Reset() {
 	address.Longitude = 0
 }
 
+// IsZero returns TRUE if this Address has no coordinates and no formatted value.
 func (address Address) IsZero() bool {
 
 	if address.Latitude != 0 {
@@ -59,6 +61,7 @@ func (address Address) IsZero() bool {
 	return true
 }
 
+// NotZero returns TRUE if this Address is not Zero.
 func (address Address) NotZero() bool {
 	return !address.IsZero()
 }
@@ -77,7 +80,7 @@ func (address Address) HasGeocode() bool {
 	return false
 }
 
-// HasAddress returns TRUE if this Address has ANY street adsress information
+// HasAddress returns TRUE if this Address has ANY street address information
 func (address Address) HasAddress() bool {
 
 	if address.Country != "" {
@@ -103,14 +106,17 @@ func (address Address) HasAddress() bool {
 	return false
 }
 
+// LonLat returns the coordinates as a "longitude,latitude" string.
 func (address Address) LonLat() string {
 	return strconv.FormatFloat(address.Longitude, 'f', 10, 64) + "," + strconv.FormatFloat(address.Latitude, 'f', 10, 64)
 }
 
+// LatLon returns the coordinates as a "latitude,longitude" string.
 func (address Address) LatLon() string {
 	return strconv.FormatFloat(address.Latitude, 'f', 10, 64) + "," + strconv.FormatFloat(address.Longitude, 'f', 10, 64)
 }
 
+// SetPoint copies the longitude and latitude from the given Point into this Address.
 func (address *Address) SetPoint(point Point) {
 	address.Longitude = point.Longitude
 	address.Latitude = point.Latitude
@@ -120,6 +126,7 @@ func (address *Address) SetPoint(point Point) {
  * Marshalling Methods
  ******************************************/
 
+// MarshalMap returns this Address as a mapof.Any keyed by its property names.
 func (address *Address) MarshalMap() mapof.Any {
 
 	return mapof.Any{
@@ -165,8 +172,7 @@ func (address *Address) UnmarshalMap(value mapof.Any) error {
  * Conversion Functions
  ******************************************/
 
-// GeoJSON returns a GeoJSON object that matches the
-// geo.GeoJSONer interface
+// GeoJSON returns this Address as a GeoJSON Point object.
 // https://www.mongodb.com/docs/manual/reference/geojson/
 func (address Address) GeoJSON() mapof.Any {
 	return mapof.Any{
