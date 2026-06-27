@@ -207,6 +207,8 @@ func (address Address) JSONLD() mapof.Any {
 	return result
 }
 
+// parsedValues returns the non-empty parsed street-address fields as a map,
+// used to populate the "address" property of the JSON-LD representation.
 func (address Address) parsedValues() mapof.String {
 
 	result := mapof.String{}
