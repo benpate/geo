@@ -80,12 +80,12 @@ func TestAddress_GetString(t *testing.T) {
 	require.Equal(t, "", address.GetString("unknown"))
 }
 
-func TestAddress_GetFloat(t *testing.T) {
+func TestAddress_GetFloatOK(t *testing.T) {
 
 	address := Address{Longitude: -118, Latitude: 34}
 
 	check := func(name string, expectedValue float64, expectedOK bool) {
-		value, ok := address.GetFloat(name)
+		value, ok := address.GetFloatOK(name)
 		require.Equal(t, expectedValue, value, "value for %q", name)
 		require.Equal(t, expectedOK, ok, "ok for %q", name)
 	}
@@ -94,6 +94,15 @@ func TestAddress_GetFloat(t *testing.T) {
 	check("longitude", -118, true)
 	check("name", 0, false)
 	check("unknown", 0, false)
+}
+
+func TestAddress_GetFloat(t *testing.T) {
+
+	address := Address{Longitude: -118, Latitude: 34}
+
+	require.Equal(t, 34.0, address.GetFloat("latitude"))
+	require.Equal(t, -118.0, address.GetFloat("longitude"))
+	require.Zero(t, address.GetFloat("unknown"))
 }
 
 func TestAddress_SetString(t *testing.T) {

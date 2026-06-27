@@ -71,9 +71,15 @@ func (address Address) GetStringOK(name string) (string, bool) {
 	return "", false
 }
 
-// GetFloat returns the named property as a float64, and a boolean that is TRUE
+// GetFloat returns the named property as a float64, or 0 if it is not a float property.
+func (address Address) GetFloat(name string) float64 {
+	result, _ := address.GetFloatOK(name)
+	return result
+}
+
+// GetFloatOK returns the named property as a float64, and a boolean that is TRUE
 // when the property name is recognized ("latitude" or "longitude").
-func (address Address) GetFloat(name string) (float64, bool) {
+func (address Address) GetFloatOK(name string) (float64, bool) {
 
 	switch name {
 

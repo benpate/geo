@@ -36,5 +36,5 @@ const (
 	AddressPropertyTimezone = "timezone"
 
 	// AddressPropertyPlusCode is the Google Plus Code of the address.
-	AddressPropertyPlusCode = "pluscode"
+	AddressPropertyPlusCode = "plusCode"
 )
