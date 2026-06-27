@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/benpate/derp"
-	"github.com/benpate/rosetta/convert"
 	"github.com/benpate/rosetta/sliceof"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
@@ -61,7 +60,9 @@ func (position Position) NotZero() bool {
 
 // String returns a string representation of this coordinate pair
 func (position Position) String() string {
-	return convert.String(position.Longitude) + "," + convert.String(position.Latitude)
+	// Use strconv with -1 precision so coordinates round-trip losslessly,
+	// instead of convert.String, which rounds floats to two decimal places.
+	return strconv.FormatFloat(position.Longitude, 'f', -1, 64) + "," + strconv.FormatFloat(position.Latitude, 'f', -1, 64)
 }
 
 // MarshalSlice returns a longitude/latitude coordinate pair
