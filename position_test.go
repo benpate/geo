@@ -2,6 +2,7 @@ package geo
 
 import (
 	"encoding/json"
+	"math"
 	"testing"
 
 	"github.com/benpate/rosetta/sliceof"
@@ -144,4 +145,104 @@ func TestPosition_AltitudeJSON(t *testing.T) {
 
 	require.Nil(t, err2)
 	require.Equal(t, p1, p2)
+}
+
+func TestPosition_UnmarshalJSON_Null(t *testing.T) {
+
+	// JSON null decodes to a nil coordinate slice, which is how a nil actually
+	// reaches UnmarshalSlice. A nil slice has length zero, so it is rejected
+	// like any other invalid length -- and must not panic on the way.
+	position := Position{}
+	require.NotNil(t, position.UnmarshalJSON([]byte("null")))
+
+	// The same path through BSON
+	require.NotNil(t, position.UnmarshalBSONValue(bson.TypeNull, nil))
+}
+
+func TestPosition_UnmarshalSlice_ClearsAltitude(t *testing.T) {
+
+	// A two-element coordinate must CLEAR a previously-set altitude rather
+	// than leaving it behind, so a reused Position cannot leak the old value
+	position := NewPositionWithAltitude(9, 9, 9)
+
+	require.Nil(t, position.UnmarshalSlice(sliceof.Float{1, 2}))
+	require.Equal(t, NewPosition(1, 2), position)
+	require.Zero(t, position.Altitude)
+}
+
+func TestPosition_String_DropsAltitude(t *testing.T) {
+
+	// String() is a coordinate PAIR, so altitude is deliberately not included
+	require.Equal(t, "1,2", NewPositionWithAltitude(1, 2, 3).String())
+}
+
+func TestPosition_String_Precision(t *testing.T) {
+
+	// String() must emit the minimal lossless representation. Routing this
+	// through rosetta's convert.String would round to two decimals and move
+	// the coordinate by roughly a kilometer.
+	require.Equal(t, "-118.40853,34.02116", NewPosition(-118.40853, 34.02116).String())
+	require.Equal(t, "0.3333333333333333,0.6666666666666666", NewPosition(1.0/3.0, 2.0/3.0).String())
+	require.Equal(t, "179.99999999999997,-89.99999999999999", NewPosition(179.99999999999997, -89.99999999999999).String())
+}
+
+func TestPosition_String_IsNotFormatCoordinatePair(t *testing.T) {
+
+	// These two formats are deliberately different and must not be merged:
+	// String() is minimal-lossless, formatCoordinatePair is fixed to ten
+	// decimal places. A change that consolidates them breaks this test.
+	position := NewPosition(-118.40853, 34.02116)
+
+	require.Equal(t, "-118.40853,34.02116", position.String())
+	require.Equal(t, "-118.4085300000,34.0211600000", formatCoordinatePair(position.Longitude, position.Latitude))
+	require.NotEqual(t, position.String(), formatCoordinatePair(position.Longitude, position.Latitude))
+}
+
+func TestPosition_ExtremeCoordinates(t *testing.T) {
+
+	// check confirms a coordinate pair survives a JSON round trip exactly
+	check := func(longitude float64, latitude float64, altitude float64) {
+		original := NewPositionWithAltitude(longitude, latitude, altitude)
+
+		data, err := json.Marshal(original)
+		require.Nil(t, err, "marshalling %v", original)
+
+		decoded := Position{}
+		require.Nil(t, decoded.UnmarshalJSON(data), "unmarshalling %s", string(data))
+		require.Equal(t, original, decoded, "round-tripping %s", string(data))
+	}
+
+	check(180, 90, 0)                                                   // the corners of the world
+	check(-180, -90, 0)                                                 //
+	check(math.MaxFloat64, -math.MaxFloat64, math.MaxFloat64)           // the corners of float64
+	check(math.SmallestNonzeroFloat64, -math.SmallestNonzeroFloat64, 0) // barely not zero
+	check(math.Pi, math.E, math.Sqrt2)                                  // irrational, full precision
+}
+
+func TestPosition_NegativeZero(t *testing.T) {
+
+	// Negative zero compares equal to zero, so it counts as a zero Position
+	position := NewPosition(math.Copysign(0, -1), 0)
+	require.True(t, position.IsZero())
+
+	// ...but it is preserved in the string form, and survives a round trip
+	require.Equal(t, "-0,0", position.String())
+
+	data, err := json.Marshal(position)
+	require.Nil(t, err)
+	require.Equal(t, "[-0,0]", string(data))
+}
+
+func TestPosition_NaN_And_Infinity(t *testing.T) {
+
+	// JSON cannot represent these, so marshalling must fail loudly rather
+	// than emit a coordinate that is silently wrong
+	check := func(value float64, label string) {
+		_, err := json.Marshal(NewPosition(value, 0))
+		require.NotNil(t, err, "marshalling %s should fail", label)
+	}
+
+	check(math.NaN(), "NaN")
+	check(math.Inf(1), "+Inf")
+	check(math.Inf(-1), "-Inf")
 }

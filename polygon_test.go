@@ -306,3 +306,74 @@ func TestPolygon_UnmarshalBSON_WrongFieldType(t *testing.T) {
 	polygon := Polygon{}
 	require.NotNil(t, polygon.UnmarshalBSON(data))
 }
+
+func TestPolygon_UnmarshalStruct_NilRing(t *testing.T) {
+
+	// Exactly one ring, but the ring itself is nil. That is zero coordinates,
+	// which is a legal (if empty) result -- and must not panic.
+	polygon := Polygon{}
+	require.Nil(t, polygon.UnmarshalStruct(GeoJSONPolygon{
+		Type:        PropertyTypePolygon,
+		Coordinates: [][][]float64{nil},
+	}))
+	require.Zero(t, len(polygon.Coordinates))
+}
+
+func TestPolygon_UnmarshalStruct_NilCoordinates(t *testing.T) {
+
+	// No rings at all fails the single-ring check
+	polygon := Polygon{}
+	require.NotNil(t, polygon.UnmarshalStruct(GeoJSONPolygon{Type: PropertyTypePolygon}))
+}
+
+func TestPolygon_UnmarshalStruct_TooManyRings(t *testing.T) {
+
+	// GeoJSON allows a polygon with holes; this package does not
+	polygon := Polygon{}
+	require.NotNil(t, polygon.UnmarshalStruct(GeoJSONPolygon{
+		Type:        PropertyTypePolygon,
+		Coordinates: [][][]float64{{{1, 2}}, {{3, 4}}},
+	}))
+}
+
+func TestPolygon_MarshalSlice_Zero(t *testing.T) {
+
+	// A zero Polygon has no vertices, and marshalling it must not panic
+	require.Zero(t, len(Polygon{}.MarshalSlice()))
+}
+
+func TestNewPolygonFromString_Edges(t *testing.T) {
+
+	// check confirms a coordinate string parses into the expected vertex count
+	check := func(input string, expected int) {
+		polygon := NewPolygonFromString(input)
+		require.Equal(t, expected, len(polygon.Coordinates), "parsing %q", input)
+	}
+
+	check("", 0)             // nothing at all
+	check("1", 0)            // a single unpaired value
+	check("1,2", 1)          // one pair
+	check("1,2,3", 1)        // trailing odd value is dropped
+	check(",,,,", 2)         // empty values parse as zero
+	check("not,a,number", 1) // unparseable values parse as zero
+	check("1,2,3,4,5,6", 3)  // three pairs
+}
+
+func TestPolygon_String_RoundTrip(t *testing.T) {
+
+	// The string form and its parser are inverses for coordinate pairs
+	original := NewPolygon(NewPosition(-118.40853, 34.02116), NewPosition(1.5, -2.25))
+
+	require.Equal(t, "-118.40853,34.02116,1.5,-2.25", original.String())
+	require.Equal(t, original, NewPolygonFromString(original.String()))
+}
+
+func TestPolygon_String_DropsAltitude(t *testing.T) {
+
+	// Position.String is a coordinate pair, so a Polygon's string form cannot
+	// carry altitude and the round trip is lossy for 3D positions
+	original := NewPolygon(NewPositionWithAltitude(1, 2, 300))
+
+	require.Equal(t, "1,2", original.String())
+	require.Equal(t, NewPolygon(NewPosition(1, 2)), NewPolygonFromString(original.String()))
+}

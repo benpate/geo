@@ -136,7 +136,13 @@ func (point *Point) UnmarshalBSON(data []byte) error {
 		return derp.Wrap(err, location, "Unable to unmarshal original BSON", string(data))
 	}
 
-	// Unmarshall BSON into an intermediate object
+	// Unmarshall BSON into an intermediate object.
+	//
+	// This error is unreachable and is kept for safety only: mapof.Any is a bare
+	// map[string]any with no custom decoder, so the driver's map codec accepts
+	// any document that validateBSONDocument has already admitted. Every input
+	// that fails here fails validation first. Polygon's matching branch IS
+	// reachable, because it decodes into a struct, which can reject a field type.
 	intermediate := mapof.NewAny()
 
 	if err := bson.Unmarshal(data, &intermediate); err != nil {

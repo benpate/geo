@@ -1,6 +1,8 @@
 package geo
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/benpate/rosetta/mapof"
@@ -239,4 +241,112 @@ func TestAddress_JSONLD_PartialGeocode(t *testing.T) {
 	withLonOnly := Address{Longitude: -118}.JSONLD()
 	require.NotContains(t, withLonOnly, "latitude")
 	require.NotContains(t, withLonOnly, "longitude")
+}
+
+// TestAddress_PropertyKeysMatchStructTags enforces the invariant that
+// AGENTS.md documents: the keys used by MarshalMap/UnmarshalMap and the keys
+// used by JSON/BSON must be the same set. When they drift, a field crossing
+// between the two paths is silently dropped -- which is exactly what the
+// historical "pluscode" / "plusCode" mismatch did.
+func TestAddress_PropertyKeysMatchStructTags(t *testing.T) {
+
+	// Every property name the package declares
+	declared := map[string]bool{
+		AddressPropertyName:       true,
+		AddressPropertyFormatted:  true,
+		AddressPropertyStreet1:    true,
+		AddressPropertyStreet2:    true,
+		AddressPropertyLocality:   true,
+		AddressPropertyRegion:     true,
+		AddressPropertyPostalCode: true,
+		AddressPropertyCountry:    true,
+		AddressPropertyPlusCode:   true,
+		AddressPropertyTimezone:   true,
+		AddressPropertyLatitude:   true,
+		AddressPropertyLongitude:  true,
+	}
+
+	// Collect the JSON and BSON key for every field on the struct
+	addressType := reflect.TypeOf(Address{})
+	jsonKeys := make(map[string]bool, addressType.NumField())
+
+	for index := range addressType.NumField() {
+
+		field := addressType.Field(index)
+		jsonKey := strings.Split(field.Tag.Get("json"), ",")[0]
+		bsonKey := strings.Split(field.Tag.Get("bson"), ",")[0]
+
+		require.NotEmpty(t, jsonKey, "field %s has no json tag", field.Name)
+
+		// RULE: The JSON and BSON tags must agree, or the two wire formats
+		// disagree about the same field
+		require.Equal(t, jsonKey, bsonKey, "field %s: json tag and bson tag differ", field.Name)
+
+		// RULE: Every tag must correspond to a declared property constant
+		require.True(t, declared[jsonKey], "field %s tag %q is not an AddressProperty constant", field.Name, jsonKey)
+
+		jsonKeys[jsonKey] = true
+	}
+
+	// RULE: MarshalMap must emit exactly the same key set as the struct tags
+	mapKeys := make(map[string]bool)
+	for key := range (Address{}).MarshalMap() {
+		mapKeys[key] = true
+	}
+
+	require.Equal(t, jsonKeys, mapKeys, "MarshalMap keys and struct tags have drifted apart")
+	require.Equal(t, len(declared), len(mapKeys), "a declared property is unused by MarshalMap")
+}
+
+func TestAddress_MapRoundTrip_AllFields(t *testing.T) {
+
+	// Every field distinct, so a mis-keyed copy shows up as a wrong value
+	// rather than coincidentally matching
+	original := Address{
+		Name:       "name",
+		Formatted:  "formatted",
+		Street1:    "street1",
+		Street2:    "street2",
+		Locality:   "locality",
+		Region:     "region",
+		PostalCode: "postalCode",
+		Country:    "country",
+		PlusCode:   "plusCode",
+		Timezone:   "timezone",
+		Latitude:   12.5,
+		Longitude:  -34.25,
+	}
+
+	decoded := NewAddress()
+	require.Nil(t, decoded.UnmarshalMap(original.MarshalMap()))
+	require.Equal(t, original, decoded)
+}
+
+func TestAddress_UnmarshalMap_Empty(t *testing.T) {
+
+	// An empty or nil map must clear the Address, not panic and not
+	// leave stale values behind
+	address := Address{Name: "stale", Latitude: 1, Longitude: 2}
+
+	require.Nil(t, address.UnmarshalMap(mapof.NewAny()))
+	require.Equal(t, NewAddress(), address)
+
+	address = Address{Name: "stale"}
+	require.Nil(t, address.UnmarshalMap(nil))
+	require.Equal(t, NewAddress(), address)
+}
+
+func TestAddress_UnmarshalMap_WrongTypes(t *testing.T) {
+
+	// Values of the wrong type are coerced by rosetta rather than rejected.
+	// This pins that behavior so a change to the coercion rules is visible.
+	address := NewAddress()
+
+	require.Nil(t, address.UnmarshalMap(mapof.Any{
+		AddressPropertyName:     12345,
+		AddressPropertyLatitude: "34.5",
+	}))
+
+	require.Equal(t, "12345", address.Name)
+	require.Equal(t, 34.5, address.Latitude)
 }

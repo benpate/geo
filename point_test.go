@@ -2,8 +2,10 @@ package geo
 
 import (
 	"encoding/json"
+	"math"
 	"testing"
 
+	"github.com/benpate/rosetta/mapof"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -216,4 +218,41 @@ func TestPoint_BSON_OmitEmpty(t *testing.T) {
 	data2, err3 := bson.Marshal(p2)
 	require.Nil(t, err3)
 	require.NotEqual(t, data, data2)
+}
+
+func TestPoint_UnmarshalMap_Empty(t *testing.T) {
+
+	// A nil or empty map has no "type", so it must be rejected -- and must
+	// not panic reaching for keys that are not there
+	point := Point{}
+	require.NotNil(t, point.UnmarshalMap(nil))
+	require.NotNil(t, point.UnmarshalMap(mapof.NewAny()))
+}
+
+func TestPoint_UnmarshalMap_MissingCoordinates(t *testing.T) {
+
+	// The right type, but nothing to read -- GetSliceOfFloat returns an empty
+	// slice, which is not a valid coordinate length
+	point := Point{}
+	require.NotNil(t, point.UnmarshalMap(mapof.Any{PropertyType: PropertyTypePoint}))
+}
+
+func TestPoint_Marshal_NaN(t *testing.T) {
+
+	// A coordinate JSON cannot represent must fail the marshal rather than
+	// emit a document with a silently wrong location
+	point := NewPoint(math.NaN(), 0)
+	_, err := json.Marshal(point)
+	require.NotNil(t, err)
+}
+
+func TestPoint_LonLat_Extremes(t *testing.T) {
+
+	// The fixed ten-decimal format must hold at the corners of the world
+	require.Equal(t, "180.0000000000,90.0000000000", NewPoint(180, 90).LonLat())
+	require.Equal(t, "90.0000000000,180.0000000000", NewPoint(180, 90).LatLon())
+	require.Equal(t, "-180.0000000000,-90.0000000000", NewPoint(-180, -90).LonLat())
+
+	// ...and must not lose sub-metre precision
+	require.Equal(t, "-118.4085300000,34.0211600000", NewPoint(-118.40853, 34.02116).LonLat())
 }
