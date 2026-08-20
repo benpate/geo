@@ -12,7 +12,7 @@ import (
 )
 
 // Polygon represents a GeoJSON "Polygon" object
-// https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.2
+// https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6
 type Polygon struct {
 	Coordinates sliceof.Object[Position]
 }
@@ -35,7 +35,7 @@ func NewPolygonFromString(data string) Polygon {
 	// Allocate a result that's half the length of the coordinate pairs
 	result := make([]Position, 0, len(coords)/2)
 
-	// Combiine coordinates into pairs
+	// Combine coordinates into pairs
 	for len(coords) > 1 {
 		position := NewPosition(coords[0], coords[1])
 		result = append(result, position)
@@ -57,7 +57,7 @@ func (polygon Polygon) NotZero() bool {
 }
 
 /******************************************
- * Marhshalling methods
+ * Marshalling methods
  ******************************************/
 
 // String returns the coordinates as a comma-delimited "lon,lat,lon,lat,..." string.
@@ -116,7 +116,7 @@ func (polygon Polygon) MarshalBSON() ([]byte, error) {
 }
 
 /******************************************
- * Unmarhshalling methods
+ * Unmarshalling methods
  ******************************************/
 
 // UnmarshalStruct populates this Polygon from a strongly-typed GeoJSONPolygon,
@@ -136,7 +136,7 @@ func (polygon *Polygon) UnmarshalStruct(data GeoJSONPolygon) error {
 	// Copy/translate coordinates into Position
 	for index, coordinate := range data.Coordinates[0] {
 		if err := polygon.Coordinates[index].UnmarshalSlice(coordinate); err != nil {
-			return derp.Internal(location, "Invalid coordinate at index", index, coordinate)
+			return derp.Wrap(err, location, "Invalid coordinate at index", index, coordinate)
 		}
 	}
 
@@ -170,6 +170,12 @@ func (polygon *Polygon) UnmarshalJSON(data []byte) error {
 func (polygon *Polygon) UnmarshalBSON(data []byte) error {
 
 	const location = "geo.Polygon.UnmarshalBSON"
+
+	// RULE: Reject a malformed document before handing it to the driver, which
+	// panics on some of them instead of returning an error
+	if err := validateBSONDocument(data); err != nil {
+		return derp.Wrap(err, location, "Unable to unmarshal original BSON", string(data))
+	}
 
 	// Unmarshall BSON into an intermediate object
 	intermediate := GeoJSONPolygon{}

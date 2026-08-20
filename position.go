@@ -16,7 +16,7 @@ func formatCoordinatePair(first float64, second float64) string {
 	return strconv.FormatFloat(first, 'f', 10, 64) + "," + strconv.FormatFloat(second, 'f', 10, 64)
 }
 
-// Position represents a Longitude/Latitude pair
+// Position represents a longitude/latitude coordinate, with an optional altitude
 // https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.1
 type Position struct {
 	Longitude float64

@@ -6,7 +6,7 @@ import (
 
 // Address represents a physical address on the planet
 // It maps to https://www.w3.org/TR/activitystreams-vocabulary/#dfn-address
-// and uses https://schema.org/PostalAddress to match Mobilizion
+// and uses https://schema.org/PostalAddress to match Mobilizon
 type Address struct {
 	Name       string  `json:"name"        bson:"name,omitempty"`       // Human-readable name of the address
 	Formatted  string  `json:"formatted"   bson:"formatted,omitempty"`  // Full, unparsed value of the address

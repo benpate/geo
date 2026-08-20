@@ -2,6 +2,7 @@ package geo
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -276,4 +277,32 @@ func TestPolygon_BSON_OmitEmpty(t *testing.T) {
 	data, err1 := bson.Marshal(mystruct)
 	require.Nil(t, err1)
 	t.Log(data)
+}
+
+func TestPolygon_UnmarshalStruct_ReportsCause(t *testing.T) {
+
+	polygon := Polygon{}
+	err := polygon.UnmarshalStruct(GeoJSONPolygon{
+		Type:        PropertyTypePolygon,
+		Coordinates: [][][]float64{{{1, 2}, {3}}},
+	})
+
+	// The error must name WHY the coordinate was rejected, not just that it was
+	require.NotNil(t, err)
+
+	cause := errors.Unwrap(err)
+	require.NotNil(t, cause)
+	require.Contains(t, cause.Error(), "Coordinates must be length 2 or 3")
+}
+
+func TestPolygon_UnmarshalBSON_WrongFieldType(t *testing.T) {
+
+	// A well-formed BSON document whose "coordinates" field is a string. It
+	// clears validation and fails in the decoder, which is the only way to
+	// reach that branch now that malformed documents are rejected earlier.
+	data, err := bson.Marshal(bson.M{"type": PropertyTypePolygon, "coordinates": "nope"})
+	require.Nil(t, err)
+
+	polygon := Polygon{}
+	require.NotNil(t, polygon.UnmarshalBSON(data))
 }

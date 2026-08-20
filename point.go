@@ -39,7 +39,7 @@ func (point Point) LatLon() string {
 }
 
 /******************************************
- * Marhshalling methods
+ * Marshalling methods
  ******************************************/
 
 // GeoJSON returns this Point as a GeoJSON object (a "type"/"coordinates" map).
@@ -77,7 +77,7 @@ func (point Point) MarshalBSON() ([]byte, error) {
 }
 
 /******************************************
- * Unmarhshalling methods
+ * Unmarshalling methods
  ******************************************/
 
 // UnmarshalMap populates this Point using the values from the provided data.
@@ -98,7 +98,7 @@ func (point *Point) UnmarshalMap(data mapof.Any) error {
 		return derp.Wrap(err, location, "Unable to unmarshal coordinates", coordinates)
 	}
 
-	// Sucess
+	// Success
 	return nil
 }
 
@@ -129,6 +129,12 @@ func (point *Point) UnmarshalJSON(data []byte) error {
 func (point *Point) UnmarshalBSON(data []byte) error {
 
 	const location = "geo.Point.UnmarshalBSON"
+
+	// RULE: Reject a malformed document before handing it to the driver, which
+	// panics on some of them instead of returning an error
+	if err := validateBSONDocument(data); err != nil {
+		return derp.Wrap(err, location, "Unable to unmarshal original BSON", string(data))
+	}
 
 	// Unmarshall BSON into an intermediate object
 	intermediate := mapof.NewAny()
