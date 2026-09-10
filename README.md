@@ -19,6 +19,12 @@ The types are designed to be useful at their zero value and to round-trip cleanl
 - **`Polygon`** — a GeoJSON `Polygon`: a single ring of `Position` values.
 - **`Address`** — a postal address (`schema.org/PostalAddress`-style) plus optional latitude/longitude, time zone, and Plus Code.
 
+## BSON compatibility
+
+`Point` writes a GeoJSON object and reads back either a GeoJSON object **or** a bare `[lon, lat]` array. The array shape is what v0.1.0 through v0.2.0 wrote, when `Position`'s promoted marshaller shadowed `Point`'s own, and records in that shape are still in the wild. The decoder accepts it permanently; nothing needs migrating to be readable.
+
+`Point` also declares both BSON interfaces on purpose — `MarshalBSONValue`/`UnmarshalBSONValue` to shadow the pair promoted from the embedded `Position`, and `MarshalBSON`/`UnmarshalBSON` for callers that marshal a `Point` on its own. Both routes share one implementation, so they cannot disagree. See [AGENTS.md](AGENTS.md) before changing either.
+
 ## References
 
 - GeoJSON: https://geojson.org
