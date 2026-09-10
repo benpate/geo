@@ -81,6 +81,13 @@ func FuzzPoint_UnmarshalBSON(f *testing.F) {
 	f.Add([]byte{5, 0, 0, 0, 0})
 
 	f.Fuzz(func(_ *testing.T, data []byte) {
+
+		// Both historical shapes reach the same decoder, through different BSON types
+		for _, dataType := range []bsontype.Type{bson.TypeEmbeddedDocument, bson.TypeArray, bson.TypeNull, bson.TypeUndefined} {
+			point := Point{}
+			_ = point.UnmarshalBSONValue(dataType, data)
+		}
+
 		point := Point{}
 		_ = point.UnmarshalBSON(data)
 	})

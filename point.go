@@ -6,6 +6,7 @@ import (
 	"github.com/benpate/derp"
 	"github.com/benpate/rosetta/mapof"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
 
 // Point represents a GeoJSON "Point" object
@@ -70,9 +71,20 @@ func (point Point) MarshalJSON() ([]byte, error) {
 	return json.Marshal(point.MarshalStruct())
 }
 
-// MarshalBSON is a custom BSON marshaller that serializes this
-// Point into a GeoJSON object.
+// MarshalBSONValue serializes this Point into a GeoJSON object.
+// It implements bson.ValueMarshaler.
+func (point Point) MarshalBSONValue() (bsontype.Type, []byte, error) {
+
+	// The *Value form is required: Position's ValueMarshaler is promoted into Point
+	// and the driver prefers it, so only a method declared here shadows it (AGENTS.md).
+	return bson.MarshalValue(point.MarshalStruct())
+}
+
+// MarshalBSON serializes this Point into a GeoJSON object.
+// It implements bson.Marshaler, for callers that marshal a Point on its own.
 func (point Point) MarshalBSON() ([]byte, error) {
+
+	// Shares MarshalStruct with MarshalBSONValue so the two interfaces cannot disagree
 	return bson.Marshal(point.MarshalStruct())
 }
 
@@ -124,36 +136,57 @@ func (point *Point) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// UnmarshalBSON is a custom BSON unmarshaller that deserializes
-// a GeoJSON object into this Point structure.
+// UnmarshalBSONValue deserializes a GeoJSON object, or a bare coordinate
+// array, into this Point. It implements bson.ValueUnmarshaler.
+func (point *Point) UnmarshalBSONValue(dataType bsontype.Type, data []byte) error {
+
+	const location = "geo.Point.UnmarshalBSONValue"
+
+	switch dataType {
+
+	// A GeoJSON document is the shape this package writes
+	case bson.TypeEmbeddedDocument:
+
+		// RULE: Reject a malformed document before handing it to the driver, which
+		// panics on some of them instead of returning an error
+		if err := validateBSONDocument(data); err != nil {
+			return derp.Wrap(err, location, "Unable to unmarshal original BSON", string(data))
+		}
+
+		// Unmarshall BSON into an intermediate object. mapof.Any has no custom decoder, so
+		// the driver's map codec accepts anything validateBSONDocument already admitted --
+		// this error is unreachable, and is kept only so a driver change cannot slip past.
+		intermediate := mapof.NewAny()
+
+		if err := bson.Unmarshal(data, &intermediate); err != nil {
+			return derp.Wrap(err, location, "Unable to unmarshal original BSON", string(data))
+		}
+
+		// Unmarshal from intermediate object into this Point
+		if err := point.UnmarshalMap(intermediate); err != nil {
+			return derp.Wrap(err, location, "Unable to unmarshal from Map", intermediate)
+		}
+
+		// I see this as an absolute win.
+		return nil
+
+	// A bare coordinate array is the shape geo v0.1.0 - v0.2.0 wrote (AGENTS.md)
+	case bson.TypeArray:
+		return point.Position.UnmarshalBSONValue(dataType, data)
+
+	// RULE: An absent or NULL Point is the zero Point, not an error
+	case bson.TypeNull, bson.TypeUndefined:
+		*point = Point{}
+		return nil
+	}
+
+	return derp.Internal(location, "Cannot unmarshal this BSON type into a Point", dataType.String())
+}
+
+// UnmarshalBSON deserializes a GeoJSON object into this Point.
+// It implements bson.Unmarshaler, for callers that unmarshal a Point on its own.
 func (point *Point) UnmarshalBSON(data []byte) error {
 
-	const location = "geo.Point.UnmarshalBSON"
-
-	// RULE: Reject a malformed document before handing it to the driver, which
-	// panics on some of them instead of returning an error
-	if err := validateBSONDocument(data); err != nil {
-		return derp.Wrap(err, location, "Unable to unmarshal original BSON", string(data))
-	}
-
-	// Unmarshall BSON into an intermediate object.
-	//
-	// This error is unreachable and is kept for safety only: mapof.Any is a bare
-	// map[string]any with no custom decoder, so the driver's map codec accepts
-	// any document that validateBSONDocument has already admitted. Every input
-	// that fails here fails validation first. Polygon's matching branch IS
-	// reachable, because it decodes into a struct, which can reject a field type.
-	intermediate := mapof.NewAny()
-
-	if err := bson.Unmarshal(data, &intermediate); err != nil {
-		return derp.Wrap(err, location, "Unable to unmarshal original BSON", string(data))
-	}
-
-	// Unmarshal from intermediate object into this Point
-	if err := point.UnmarshalMap(intermediate); err != nil {
-		return derp.Wrap(err, location, "Unable to unmarshal from Map", intermediate)
-	}
-
-	// I see this as an absolute win.
-	return nil
+	// A standalone BSON document is an EmbeddedDocument value by any other name
+	return point.UnmarshalBSONValue(bson.TypeEmbeddedDocument, data)
 }

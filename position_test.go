@@ -246,3 +246,21 @@ func TestPosition_NaN_And_Infinity(t *testing.T) {
 	check(math.Inf(1), "+Inf")
 	check(math.Inf(-1), "-Inf")
 }
+
+/******************************************
+ * BSON format tests
+ ******************************************/
+
+// TestPosition_FieldFormatLock pins the bytes a bare Position writes as a struct
+// field. A coordinate pair is a BSON ARRAY, not a document.
+func TestPosition_FieldFormatLock(t *testing.T) {
+
+	data, err := bson.Marshal(struct {
+		Position Position `bson:"position"`
+	}{NewPosition(1, 2)})
+
+	require.Nil(t, err)
+	require.Equal(t,
+		`{"position": [{"$numberDouble":"1.0"},{"$numberDouble":"2.0"}]}`,
+		bson.Raw(data).String())
+}

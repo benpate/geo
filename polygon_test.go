@@ -377,3 +377,32 @@ func TestPolygon_String_DropsAltitude(t *testing.T) {
 	require.Equal(t, "1,2", original.String())
 	require.Equal(t, NewPolygon(NewPosition(1, 2)), NewPolygonFromString(original.String()))
 }
+
+/******************************************
+ * BSON format tests
+ ******************************************/
+
+// TestPolygon_FieldFormatLock pins the bytes a Polygon writes as a struct field.
+// Polygon names its Position field rather than embedding it, so nothing is promoted.
+func TestPolygon_FieldFormatLock(t *testing.T) {
+
+	data, err := bson.Marshal(struct {
+		Area Polygon `bson:"area"`
+	}{NewPolygon(NewPosition(1, 2), NewPosition(3, 4))})
+
+	require.Nil(t, err)
+	require.Equal(t,
+		`{"area": {"type": "Polygon","coordinates": [[[{"$numberDouble":"1.0"},{"$numberDouble":"2.0"}],[{"$numberDouble":"3.0"},{"$numberDouble":"4.0"}]]]}}`,
+		bson.Raw(data).String())
+}
+
+// TestPolygon_DoesNotImplementValueMarshaler guards the reason Polygon is safe:
+// a *Value method would change which encoder the driver resolves for it.
+func TestPolygon_DoesNotImplementValueMarshaler(t *testing.T) {
+
+	_, isValueMarshaler := any(Polygon{}).(bson.ValueMarshaler)
+	require.False(t, isValueMarshaler, "adding MarshalBSONValue to Polygon changes its stored format -- see AGENTS.md")
+
+	_, isValueUnmarshaler := any(&Polygon{}).(bson.ValueUnmarshaler)
+	require.False(t, isValueUnmarshaler, "adding UnmarshalBSONValue to Polygon changes its stored format -- see AGENTS.md")
+}
