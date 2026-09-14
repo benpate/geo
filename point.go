@@ -44,8 +44,8 @@ func (point Point) LatLon() string {
  ******************************************/
 
 // GeoJSON returns this Point as a GeoJSON object (a "type"/"coordinates" map).
-func (point Point) GeoJSON() map[string]any {
-	return map[string]any{
+func (point Point) GeoJSON() mapof.Any {
+	return mapof.Any{
 		PropertyType:        PropertyTypePoint,
 		PropertyCoordinates: point.MarshalSlice(),
 	}

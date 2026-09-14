@@ -6,6 +6,7 @@ import (
 
 	"github.com/benpate/derp"
 	"github.com/benpate/rosetta/convert"
+	"github.com/benpate/rosetta/mapof"
 	"github.com/benpate/rosetta/slice"
 	"github.com/benpate/rosetta/sliceof"
 	"go.mongodb.org/mongo-driver/bson"
@@ -72,8 +73,8 @@ func (polygon Polygon) String() string {
 }
 
 // GeoJSON returns a GeoJSON representation of this Polygon
-func (polygon Polygon) GeoJSON() map[string]any {
-	return map[string]any{
+func (polygon Polygon) GeoJSON() mapof.Any {
+	return mapof.Any{
 		PropertyType: PropertyTypePolygon,
 		PropertyCoordinates: [][][]float64{
 			polygon.MarshalSlice(),
