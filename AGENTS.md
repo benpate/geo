@@ -27,6 +27,8 @@ The mongo-driver registers the **`*Value` hooks first** and `lookupInterfaceDeco
 
 So: **`Point` declares `MarshalBSONValue`/`UnmarshalBSONValue` at depth 0 specifically to shadow the promoted pair.** It also keeps `MarshalBSON`/`UnmarshalBSON`, delegating to the same `MarshalStruct` and to `UnmarshalBSONValue`, so the two interfaces cannot disagree no matter which one a caller or codec picks. Renaming, removing, or diverging either pair changes the format on disk.
 
+Each type also carries compile-time assertions naming the interfaces it must keep satisfying (`var _ bson.ValueMarshaler = ...`, beside the BSON tests in `point_test.go` and `position_test.go`). They exist because these interfaces are satisfied *structurally*: a signature that drifts out of step with the driver's does not fail to compile at the method itself, it just stops being recognized. `Position` needs them most -- it has no plain `MarshalBSON` to fall back on.
+
 `Polygon` is safe for one reason only: it holds `Position` in a **named field** rather than embedding it, so nothing is promoted. `TestPolygon_DoesNotImplementValueMarshaler` fails if anyone gives it a `*Value` method, because that would change the stored format of every `Polygon`.
 
 `Point.UnmarshalBSONValue` accepts a GeoJSON document *and* a bare coordinate array, permanently. The array shape is what v0.1.0–v0.2.0 wrote, and those records are still out there.

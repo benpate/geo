@@ -251,6 +251,13 @@ func TestPosition_NaN_And_Infinity(t *testing.T) {
  * BSON format tests
  ******************************************/
 
+// Position must satisfy the *Value BSON interfaces. It has no plain
+// MarshalBSON to fall back on, so losing them changes its stored format.
+var (
+	_ bson.ValueMarshaler   = Position{}
+	_ bson.ValueUnmarshaler = &Position{}
+)
+
 // TestPosition_FieldFormatLock pins the bytes a bare Position writes as a struct
 // field. A coordinate pair is a BSON ARRAY, not a document.
 func TestPosition_FieldFormatLock(t *testing.T) {
