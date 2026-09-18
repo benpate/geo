@@ -3,7 +3,7 @@ module github.com/benpate/geo
 go 1.26.0
 
 require (
-	github.com/benpate/derp v0.39.0
+	github.com/benpate/derp v0.43.0
 	github.com/benpate/rosetta v0.35.0
 	github.com/stretchr/testify v1.12.1
 	go.mongodb.org/mongo-driver v1.17.9
