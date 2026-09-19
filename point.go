@@ -44,8 +44,11 @@ func (point Point) LatLon() string {
  ******************************************/
 
 // GeoJSON returns this Point as a GeoJSON object (a "type"/"coordinates" map).
-func (point Point) GeoJSON() mapof.Any {
-	return mapof.Any{
+func (point Point) GeoJSON() map[string]any {
+
+	// The UNNAMED map type is what satisfies exp.GeoJSONer, and keeps `exp`
+	// free of a rosetta dependency. See AGENTS.md.
+	return map[string]any{
 		PropertyType:        PropertyTypePoint,
 		PropertyCoordinates: point.MarshalSlice(),
 	}

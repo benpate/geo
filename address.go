@@ -172,8 +172,11 @@ func (address *Address) UnmarshalMap(value mapof.Any) error {
 
 // GeoJSON returns this Address as a GeoJSON Point object.
 // https://www.mongodb.com/docs/manual/reference/geojson/
-func (address Address) GeoJSON() mapof.Any {
-	return mapof.Any{
+func (address Address) GeoJSON() map[string]any {
+
+	// The UNNAMED map type is what satisfies exp.GeoJSONer, and keeps `exp`
+	// free of a rosetta dependency. See AGENTS.md.
+	return map[string]any{
 		PropertyType:        PropertyTypePoint,
 		PropertyCoordinates: []float64{address.Longitude, address.Latitude},
 	}
